@@ -76,7 +76,7 @@
     // Function to start the camera stream
     async function startCamera() {
       try {
-        videoStream = await navigator.mediaDevices.getUserMedia({ video: true, facingMode: { exact: 'environment' } });
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = videoStream;
 
         // Draw the video onto the canvas
