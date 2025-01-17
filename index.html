@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zoom and Capture Video Stream</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+
+    canvas, img {
+      border: 2px solid #ccc;
+      margin: 10px 0;
+    }
+
+    button {
+      margin: 10px 5px;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .controls {
+      margin-top: 10px;
+    }
+
+    .capture-area {
+      text-align: center;
+    }
+
+    #captured-image {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="640" height="360"></canvas>
+  <div class="controls">
+    <button id="zoom-in">Zoom In</button>
+    <button id="zoom-out">Zoom Out</button>
+    <button id="reset-zoom">Reset Zoom</button>
+    <button id="capture-image">Capture Image</button>
+  </div>
+  <div class="capture-area">
+    <h3>Captured Image</h3>
+    <img id="captured-image" alt="Captured frame will appear here">
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const zoomInButton = document.getElementById('zoom-in');
+    const zoomOutButton = document.getElementById('zoom-out');
+    const resetZoomButton = document.getElementById('reset-zoom');
+    const captureButton = document.getElementById('capture-image');
+    const capturedImage = document.getElementById('captured-image');
+
+    let videoStream;
+    let scale = 1; // Default zoom level
+    let offsetX = 0;
+    let offsetY = 0;
+
+    const video = document.createElement('video');
+    video.autoplay = true;
+    video.playsInline = true;
+
+    // Function to start the camera stream
+    async function startCamera() {
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: true, facingMode: { exact: 'environment' } });
+        video.srcObject = videoStream;
+
+        // Draw the video onto the canvas
+        video.addEventListener('play', () => {
+          const draw = () => {
+            if (!video.paused && !video.ended) {
+              const cropWidth = video.videoWidth / scale;
+              const cropHeight = video.videoHeight / scale;
+              const cropX = (video.videoWidth - cropWidth) / 2 + offsetX;
+              const cropY = (video.videoHeight - cropHeight) / 2 + offsetY;
+
+              context.clearRect(0, 0, canvas.width, canvas.height);
+              context.drawImage(
+                video, 
+                cropX, cropY, cropWidth, cropHeight, // Source rectangle
+                0, 0, canvas.width, canvas.height  // Destination rectangle
+              );
+              requestAnimationFrame(draw);
+            }
+          };
+          draw();
+        });
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        alert('Unable to access camera. Please check permissions.');
+      }
+    }
+
+    // Event listeners for zoom controls
+    zoomInButton.addEventListener('click', () => {
+      scale = Math.min(scale + 0.1, 5); // Cap zoom-in level to 5x
+    });
+
+    zoomOutButton.addEventListener('click', () => {
+      scale = Math.max(scale - 0.1, 1); // Cap zoom-out level to 1x
+    });
+
+    resetZoomButton.addEventListener('click', () => {
+      scale = 1; // Reset zoom level
+      offsetX = 0; // Reset offsets
+      offsetY = 0;
+    });
+
+    // Capture the current frame and display it
+    captureButton.addEventListener('click', () => {
+      const imageData = canvas.toDataURL('image/png');
+      capturedImage.src = imageData;
+    });
+
+    // Initialize the camera stream
+    startCamera();
+  </script>
+</body>
+</html>
